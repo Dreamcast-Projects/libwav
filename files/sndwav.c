@@ -35,7 +35,7 @@
 #define SNDDRV_STATUS_HAVEBUF      0x02
 #define SNDDRV_STATUS_BUFEND       0x03
 
-#define STREAM_BUFFER_SIZE 65536+16384
+#define STREAM_BUFFER_SIZE 65536
 
 typedef void * (*snddrv_cb)(snd_stream_hnd_t, int, int*);
 
@@ -105,6 +105,12 @@ void wav_destroy(wav_stream_hnd_t hnd) {
     if(streams[hnd].shnd == SND_STREAM_INVALID)
         return;
 
+    if(streams[hnd].wave_file != NULL) {
+        fclose(streams[hnd].wave_file);
+    } else {
+        //free(wave_buf);
+    }
+
     snd_stream_stop(streams[hnd].shnd);
     snd_stream_destroy(streams[hnd].shnd);
     streams[hnd].shnd = SND_STREAM_INVALID;
@@ -167,7 +173,7 @@ wav_stream_hnd_t wav_create_buf(const unsigned char* buf, int loop) {
     if(buf == NULL || (index = get_free_slot()) == SND_STREAM_INVALID)
         return SND_STREAM_INVALID;
 
-    WavFileInfo info = get_wav_info_buffer(streams[index].wave_buf);
+    WavFileInfo info = get_wav_info_buffer(buf);
     streams[index].loop = loop;
     streams[index].rate = info.sample_rate;
     streams[index].chan = info.channels;
@@ -175,8 +181,8 @@ wav_stream_hnd_t wav_create_buf(const unsigned char* buf, int loop) {
     streams[index].data_length = info.data_length;
     streams[index].callback = wav_buf_callback;
     streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX);  // SND_STREAM_BUFFER_MAX/4
-    streams[index].wave_buf = buf + info.data_offset;
-    streams[index].buf_offset = 0;
+    streams[index].wave_buf = buf;
+    streams[index].buf_offset = info.data_offset;
     streams[index].status = SNDDEC_STATUS_READY;
 
     return index;
@@ -257,7 +263,7 @@ static void* sndwav_thread() {
                     if(streams[i].wave_file != NULL)
                         fseek(streams[i].wave_file, streams[i].data_offset, SEEK_SET);
                     else
-                        streams[i].buf_offset = 0;
+                        streams[i].buf_offset = streams[i].data_offset;
                     
                     streams[i].status = SNDDEC_STATUS_READY;
                     break;
@@ -267,7 +273,6 @@ static void* sndwav_thread() {
                     break;
             }
         }
-        fflush(stdout);
     }
 
     wav_shutdown();
@@ -291,7 +296,6 @@ static void *wav_file_callback(snd_stream_hnd_t hnd, int req, int* done) {
 
     streams[hnd].drv_ptr = streams[hnd].drv_buf;
     *done = req;
-    fflush(stdout);
 
     return streams[hnd].drv_ptr;
 }
@@ -300,7 +304,7 @@ static void *wav_buf_callback(snd_stream_hnd_t hnd, int req, int* done) {
     if((streams[hnd].data_length-streams[hnd].buf_offset) >= req)
         memcpy(streams[hnd].drv_buf, streams[hnd].wave_buf+streams[hnd].buf_offset, req);
     else {
-        streams[hnd].buf_offset = 0;
+        streams[hnd].buf_offset = streams[hnd].data_offset;
         if(streams[hnd].loop) {
             memcpy(streams[hnd].drv_buf, streams[hnd].wave_buf+streams[hnd].buf_offset, req);
         }
