@@ -41,17 +41,15 @@ typedef void * (*snddrv_cb)(snd_stream_hnd_t, int, int*);
 
 typedef struct
 {
-    unsigned char* drv_ptr;
-    unsigned int samples_done;
     snddrv_cb callback;
+    snd_stream_hnd_t shnd; // Stream handler
 
     int loop;
     int chan; // Mono or Stereo
     volatile short status; // Status of stream
     unsigned int rate; // 44100Hz
     unsigned short vol; // 0-255
-    snd_stream_hnd_t shnd; // Stream handler
-
+    
     unsigned char drv_buf[STREAM_BUFFER_SIZE]; // Buffer
     
     FILE* wave_file;
@@ -70,7 +68,6 @@ static snddrv_hnd streams[SND_STREAM_MAX];
 static void* sndwav_thread();
 static void* wav_file_callback(snd_stream_hnd_t hnd, int req, int* done);
 static void* wav_buf_callback(snd_stream_hnd_t hnd, int req, int* done);
-static int get_free_slot();
 
 int wav_init() {
     if (snd_stream_init() < 0)
@@ -120,70 +117,77 @@ void wav_destroy(wav_stream_hnd_t hnd) {
 }
 
 wav_stream_hnd_t wav_create(const char* filename, int loop) {
-    wav_stream_hnd_t index;
+    wav_stream_hnd_t index = snd_stream_alloc(wav_file_callback, SND_STREAM_BUFFER_MAX); // SND_STREAM_BUFFER_MAX/4
 
-    if(filename == NULL || (index = get_free_slot()) == SND_STREAM_INVALID)
-        return SND_STREAM_INVALID;
-
-    streams[index].wave_file = fopen(filename, "rb");
-    if(streams[index].wave_file == NULL) {
-        printf("FILE I/O ERROR\n");
+    if(filename == NULL || index == SND_STREAM_INVALID) {
+        snd_stream_destroy(index);
         return SND_STREAM_INVALID;
     }
 
-    WavFileInfo info = get_wav_info_file(streams[index].wave_file);
+    FILE* file  = fopen(filename, "rb");
+    if(file == NULL) {
+        printf("FILE I/O ERROR\n");
+        snd_stream_destroy(index);
+        return SND_STREAM_INVALID;
+    }
+
+    WavFileInfo info = get_wav_info_file(file);
+    streams[index].shnd = index;
+    streams[index].wave_file = file;
     streams[index].loop = loop;
     streams[index].rate = info.sample_rate;
     streams[index].chan = info.channels;
     streams[index].data_offset = info.data_offset;
     streams[index].data_length = info.data_length;
     streams[index].callback = wav_file_callback;
-    streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX); // SND_STREAM_BUFFER_MAX/4
-    fseek(streams[index].wave_file, streams[index].data_offset, SEEK_SET);
     streams[index].status = SNDDEC_STATUS_READY;
+    fseek(streams[index].wave_file, streams[index].data_offset, SEEK_SET);
 
     return index;
 }
 
 wav_stream_hnd_t wav_create_fd(FILE* file, int loop) {
-    wav_stream_hnd_t index;
+    wav_stream_hnd_t index = snd_stream_alloc(wav_file_callback, SND_STREAM_BUFFER_MAX); // SND_STREAM_BUFFER_MAX/4
 
-    if(file == NULL || (index = get_free_slot()) == SND_STREAM_INVALID)
+    if(file == NULL || index == SND_STREAM_INVALID) {
+        snd_stream_destroy(index);
         return SND_STREAM_INVALID;
+    }
 
+    WavFileInfo info = get_wav_info_file(file);
+    streams[index].shnd = index;
     streams[index].wave_file = file;
-
-    WavFileInfo info = get_wav_info_file(streams[index].wave_file);
     streams[index].loop = loop;
     streams[index].rate = info.sample_rate;
     streams[index].chan = info.channels;
     streams[index].data_offset = info.data_offset;
     streams[index].data_length = info.data_length;
     streams[index].callback = wav_file_callback;
-    streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX);  // SND_STREAM_BUFFER_MAX/4
-    fseek(streams[index].wave_file, streams[index].data_offset, SEEK_SET);
     streams[index].status = SNDDEC_STATUS_READY;
+    fseek(streams[index].wave_file, streams[index].data_offset, SEEK_SET);
 
     return index;
 }
 
 wav_stream_hnd_t wav_create_buf(const unsigned char* buf, int loop) {
-    wav_stream_hnd_t index;
+    wav_stream_hnd_t index = snd_stream_alloc(wav_buf_callback, SND_STREAM_BUFFER_MAX);  // SND_STREAM_BUFFER_MAX/4
 
-    if(buf == NULL || (index = get_free_slot()) == SND_STREAM_INVALID)
+    if(buf == NULL || index == SND_STREAM_INVALID) {
+        snd_stream_destroy(index);
         return SND_STREAM_INVALID;
+    }
 
     WavFileInfo info = get_wav_info_buffer(buf);
+    streams[index].shnd = index;
+    streams[index].wave_buf = buf;
     streams[index].loop = loop;
     streams[index].rate = info.sample_rate;
     streams[index].chan = info.channels;
     streams[index].data_offset = info.data_offset;
     streams[index].data_length = info.data_length;
     streams[index].callback = wav_buf_callback;
-    streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX);  // SND_STREAM_BUFFER_MAX/4
-    streams[index].wave_buf = buf;
-    streams[index].buf_offset = info.data_offset;
     streams[index].status = SNDDEC_STATUS_READY;
+    streams[index].buf_offset = info.data_offset;
 
     return index;
 }
@@ -229,11 +233,11 @@ int wav_isplaying(wav_stream_hnd_t hnd) {
     return streams[hnd].status == SNDDEC_STATUS_STREAMING;
 }
 
-void wav_add_filter(wav_stream_hnd_t hnd, snddrv_filter filter, void* obj) {
+void wav_add_filter(wav_stream_hnd_t hnd, wav_filter filter, void* obj) {
     snd_stream_filter_add(streams[hnd].shnd, filter, obj);
 }
 
-void wav_remove_filter(wav_stream_hnd_t hnd, snddrv_filter filter, void* obj) {
+void wav_remove_filter(wav_stream_hnd_t hnd, wav_filter filter, void* obj) {
     snd_stream_filter_remove(streams[hnd].shnd, filter, obj);
 }
 
@@ -294,10 +298,9 @@ static void *wav_file_callback(snd_stream_hnd_t hnd, int req, int* done) {
         }
     }
 
-    streams[hnd].drv_ptr = streams[hnd].drv_buf;
     *done = req;
 
-    return streams[hnd].drv_ptr;
+    return streams[hnd].drv_buf;
 }
 
 static void *wav_buf_callback(snd_stream_hnd_t hnd, int req, int* done) {
@@ -315,17 +318,7 @@ static void *wav_buf_callback(snd_stream_hnd_t hnd, int req, int* done) {
         }
     }
 
-    streams[hnd].drv_ptr = streams[hnd].drv_buf;  // Need to set drv ptr to drv buffer
-    streams[hnd].buf_offset += *done = req;       // Callback returns what was requested
+    streams[hnd].buf_offset += *done = req;
 
-    return streams[hnd].drv_ptr;
-}
-
-static int get_free_slot() {
-    for(int i=0;i<SND_STREAM_MAX;i++) {
-        if(streams[i].shnd == SND_STREAM_INVALID)
-            return i;
-    }
-
-    return SND_STREAM_INVALID;
+    return streams[hnd].drv_buf;
 }
