@@ -301,7 +301,7 @@ static void *wav_file_callback(snd_stream_hnd_t hnd, int req, int* done) {
 }
 
 static void *wav_buf_callback(snd_stream_hnd_t hnd, int req, int* done) {
-    if((streams[hnd].data_length-streams[hnd].buf_offset) >= req)
+    if((streams[hnd].data_length-(streams[hnd].buf_offset - streams[hnd].data_offset)) >= req)
         memcpy(streams[hnd].drv_buf, streams[hnd].wave_buf+streams[hnd].buf_offset, req);
     else {
         streams[hnd].buf_offset = streams[hnd].data_offset;
