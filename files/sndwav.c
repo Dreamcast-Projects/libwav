@@ -35,9 +35,9 @@
 #define SNDDRV_STATUS_HAVEBUF      0x02
 #define SNDDRV_STATUS_BUFEND       0x03
 
-#define STREAM_BUFFER_SIZE 100000//65536+16384
+#define STREAM_BUFFER_SIZE 65536+16384
 
-typedef void * (*snddrv_cb)(snd_stream_hnd_t, int, int*); 
+typedef void * (*snddrv_cb)(snd_stream_hnd_t, int, int*);
 
 typedef struct
 {
@@ -132,7 +132,7 @@ wav_stream_hnd_t wav_create(const char* filename, int loop) {
     streams[index].data_offset = info.data_offset;
     streams[index].data_length = info.data_length;
     streams[index].callback = wav_file_callback;
-    streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX);
+    streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX); // SND_STREAM_BUFFER_MAX/4
     fseek(streams[index].wave_file, streams[index].data_offset, SEEK_SET);
     streams[index].status = SNDDEC_STATUS_READY;
 
@@ -154,7 +154,7 @@ wav_stream_hnd_t wav_create_fd(FILE* file, int loop) {
     streams[index].data_offset = info.data_offset;
     streams[index].data_length = info.data_length;
     streams[index].callback = wav_file_callback;
-    streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX);
+    streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX);  // SND_STREAM_BUFFER_MAX/4
     fseek(streams[index].wave_file, streams[index].data_offset, SEEK_SET);
     streams[index].status = SNDDEC_STATUS_READY;
 
@@ -174,7 +174,7 @@ wav_stream_hnd_t wav_create_buf(const unsigned char* buf, int loop) {
     streams[index].data_offset = info.data_offset;
     streams[index].data_length = info.data_length;
     streams[index].callback = wav_buf_callback;
-    streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX);
+    streams[index].shnd = snd_stream_alloc(streams[index].callback, SND_STREAM_BUFFER_MAX);  // SND_STREAM_BUFFER_MAX/4
     streams[index].wave_buf = buf + info.data_offset;
     streams[index].buf_offset = 0;
     streams[index].status = SNDDEC_STATUS_READY;
@@ -221,6 +221,14 @@ void wav_volume(wav_stream_hnd_t hnd, int vol) {
 
 int wav_isplaying(wav_stream_hnd_t hnd) {
     return streams[hnd].status == SNDDEC_STATUS_STREAMING;
+}
+
+void wav_add_filter(wav_stream_hnd_t hnd, snddrv_filter filter, void* obj) {
+    snd_stream_filter_add(streams[hnd].shnd, filter, obj);
+}
+
+void wav_remove_filter(wav_stream_hnd_t hnd, snddrv_filter filter, void* obj) {
+    snd_stream_filter_remove(streams[hnd].shnd, filter, obj);
 }
 
 static void* sndwav_thread() {
