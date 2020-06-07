@@ -10,10 +10,10 @@ SHORT_DESC =		Library for decoding WAV file headers (with KOS additions)
 DEPENDENCIES =
 
 # What files we need to download, and where from.
-GIT_REPOSITORY =	git://git.code.sf.net/p/cadcdev/libtga
+GIT_REPOSITORY =	git://github.com/andressbarajas/libwav.git
 
 TARGET =		libwav.a
-INSTALLED_HDRS =	include/sndwav.h
+INSTALLED_HDRS =	sndwav.h
 HDR_INSTDIR =		wav
 
 # KOS Distributed extras (to be copied into the build tree)
