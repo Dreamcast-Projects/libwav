@@ -35,8 +35,6 @@
 #define SNDDRV_STATUS_HAVEBUF      0x02
 #define SNDDRV_STATUS_BUFEND       0x03
 
-#define STREAM_BUFFER_SIZE 65536
-
 typedef void * (*snddrv_cb)(snd_stream_hnd_t, int, int*);
 
 typedef struct
@@ -126,12 +124,16 @@ wav_stream_hnd_t wav_create(const char* filename, int loop) {
 
     FILE* file  = fopen(filename, "rb");
     if(file == NULL) {
-        printf("FILE I/O ERROR\n");
         snd_stream_destroy(index);
         return SND_STREAM_INVALID;
     }
 
-    WavFileInfo info = get_wav_info_file(file);
+    WavFileInfo info;
+    if(!wav_get_info_file(file, &info)) {
+        snd_stream_destroy(index);
+        return SND_STREAM_INVALID;
+    }
+
     streams[index].shnd = index;
     streams[index].wave_file = file;
     streams[index].loop = loop;
@@ -154,7 +156,12 @@ wav_stream_hnd_t wav_create_fd(FILE* file, int loop) {
         return SND_STREAM_INVALID;
     }
 
-    WavFileInfo info = get_wav_info_file(file);
+    WavFileInfo info;
+    if(!wav_get_info_file(file, &info)) {
+        snd_stream_destroy(index);
+        return SND_STREAM_INVALID;
+    }
+
     streams[index].shnd = index;
     streams[index].wave_file = file;
     streams[index].loop = loop;
@@ -177,7 +184,12 @@ wav_stream_hnd_t wav_create_buf(const unsigned char* buf, int loop) {
         return SND_STREAM_INVALID;
     }
 
-    WavFileInfo info = get_wav_info_buffer(buf);
+    WavFileInfo info;
+    if(!wav_get_info_buffer(buf, &info)) {
+        snd_stream_destroy(index);
+        return SND_STREAM_INVALID;
+    }
+
     streams[index].shnd = index;
     streams[index].wave_buf = buf;
     streams[index].loop = loop;

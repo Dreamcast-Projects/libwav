@@ -21,7 +21,7 @@ typedef struct {
     unsigned int data_length;
 } WavFileInfo;
 
-WavFileInfo get_wav_info_file(FILE* file);
-WavFileInfo get_wav_info_buffer(const unsigned char* buffer);
+int wav_get_info_file(FILE* file, WavFileInfo* result);
+int wav_get_info_buffer(const unsigned char* buffer, WavFileInfo* result);
 
 #endif
