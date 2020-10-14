@@ -1,6 +1,9 @@
 #ifndef SNDWAV_H
 #define SNDWAV_H
 
+#include <sys/cdefs.h>
+__BEGIN_DECLS
+
 #include <stdio.h>
 
 #define STREAM_BUFFER_SIZE 65536
@@ -24,5 +27,7 @@ int wav_isplaying(wav_stream_hnd_t hnd);
 
 void wav_add_filter(wav_stream_hnd_t hnd, wav_filter filter, void* obj);
 void wav_remove_filter(wav_stream_hnd_t hnd, wav_filter filter, void* obj);
+
+__END_DECLS
 
 #endif

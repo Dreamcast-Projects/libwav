@@ -5,6 +5,9 @@
 // http://soundfile.sapp.org/doc/WaveFormat/
 // https://wiki.fileformat.com/audio/wav/
 
+#include <sys/cdefs.h>
+__BEGIN_DECLS
+
 #include <stdio.h>
 
 #define	WAVE_FORMAT_PCM     	0x0001  // PCM
@@ -23,5 +26,7 @@ typedef struct {
 
 int wav_get_info_file(FILE* file, WavFileInfo* result);
 int wav_get_info_buffer(const unsigned char* buffer, WavFileInfo* result);
+
+__END_DECLS
 
 #endif
