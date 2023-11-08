@@ -30,7 +30,7 @@ int wav_get_info_file(FILE *file, WavFileInfo *result) {
         return 0;
     }
 
-    if(strncmp(wavhdr.hdr3, "data", 4)) {
+    if(strncmp((const char *)wavhdr.hdr3, "data", 4)) {
         /* File contains meta data that we want to skip.
            Keep reading until we find the "data" header. */
         fseek(file, wavhdr.datasize, SEEK_CUR);
@@ -43,9 +43,9 @@ int wav_get_info_file(FILE *file, WavFileInfo *result) {
             fread(&(wavhdr.datasize), 4, 1, file);
 
             /* Skip the chunk if it's not the "data" chunk. */
-            if(strncmp(wavhdr.hdr3, "data", 4))
+            if(strncmp((const char *)wavhdr.hdr3, "data", 4))
                 fseek(file, wavhdr.datasize, SEEK_CUR);
-        } while(strncmp(wavhdr.hdr3, "data", 4));
+        } while(strncmp((const char *)wavhdr.hdr3, "data", 4));
     }
 
     result->format = wavhdr.format;
@@ -64,11 +64,9 @@ int wav_get_info_buffer(const unsigned char* buffer, WavFileInfo* result) {
     size_t offset = sizeof(wavhdr_t);
 
     memset(result, 0, sizeof(WavFileInfo));
+    memcpy(&wavhdr, buffer, sizeof(wavhdr_t));
 
-    if(memcpy(&wavhdr, buffer, sizeof(wavhdr_t) == NULL))
-        return 0;
-
-    if(strncmp(wavhdr.hdr3, "data", 4)) {
+    if(strncmp((const char *)wavhdr.hdr3, "data", 4)) {
         /* File contains meta data that we want to skip.
            Keep reading until we find the "data" header. */
         offset += wavhdr.datasize;
@@ -83,9 +81,9 @@ int wav_get_info_buffer(const unsigned char* buffer, WavFileInfo* result) {
             offset += 4;
 
             /* Skip the chunk if it's not the "data" chunk. */
-            if(strncmp(wavhdr.hdr3, "data", 4))
+            if(strncmp((const char *)wavhdr.hdr3, "data", 4))
                 offset += wavhdr.datasize;
-        } while(strncmp(wavhdr.hdr3, "data", 4));
+        } while(strncmp((const char *)wavhdr.hdr3, "data", 4));
     }
 
     result->format = wavhdr.format;
@@ -94,7 +92,7 @@ int wav_get_info_buffer(const unsigned char* buffer, WavFileInfo* result) {
     result->sample_size = wavhdr.sample_size;
     result->data_length = wavhdr.datasize;
 
-    result->data_offset = buffer + offset;
+    result->data_offset = offset;
 
     return 1;
 }
