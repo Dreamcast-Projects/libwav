@@ -26,7 +26,7 @@ int wav_get_info_file(file_t file, WavFileInfo *result) {
 
     fs_seek(file, 0, SEEK_SET);
     if(fs_read(file, &wavhdr, sizeof(wavhdr)) != sizeof(wavhdr)) {
-        fclose(file);
+        fs_close(file);
         return 0;
     }
 
@@ -54,7 +54,7 @@ int wav_get_info_file(file_t file, WavFileInfo *result) {
     result->sample_size = wavhdr.sample_size;
     result->data_length = wavhdr.data_length;
 
-    result->data_offset = ftell(file);
+    result->data_offset = fs_tell(file);
 
     return 1;
 }
