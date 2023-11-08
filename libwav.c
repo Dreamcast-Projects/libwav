@@ -51,7 +51,7 @@ int wav_get_info_file(FILE *file, WavFileInfo *result) {
     result->format = wavhdr.format;
     result->channels = wavhdr.channels;
     result->sample_rate = wavhdr.sample_rate;
-    result->sameple_size = wavhdr.sample_size;
+    result->sample_size = wavhdr.sample_size;
     result->data_length = wavhdr.datasize;
 
     result->data_offset = ftell(file);
@@ -91,7 +91,7 @@ int wav_get_info_buffer(const unsigned char* buffer, WavFileInfo* result) {
     result->format = wavhdr.format;
     result->channels = wavhdr.channels;
     result->sample_rate = wavhdr.sample_rate;
-    result->sameple_size = wavhdr.sample_size;
+    result->sample_size = wavhdr.sample_size;
     result->data_length = wavhdr.datasize;
 
     result->data_offset = buffer + offset;
