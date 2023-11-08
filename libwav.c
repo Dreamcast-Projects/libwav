@@ -2,109 +2,99 @@
 
 #include <string.h>
 
-int wav_get_info_file(FILE* file, WavFileInfo* result) {
-    char read_buf[8];
-    unsigned int fmt_size;
+typedef struct __attribute__((__packed__)) {
+    int8_t hdr1[4];
+    int32_t totalsize;
+
+    int8_t hdr2[8];
+    int32_t hdrsize;
+    int16_t format;
+    int16_t channels;
+    int32_t sample_rate;
+    int32_t byte_per_sec;
+    int16_t blocksize;
+    int16_t sample_size;
+
+    int8_t hdr3[4];
+    int32_t datasize;
+} wavhdr_t;
+
+int wav_get_info_file(FILE *file, WavFileInfo *result) {
+    wavhdr_t wavhdr;
+
     memset(result, 0, sizeof(WavFileInfo));
 
     fseek(file, 0, SEEK_SET);
-    fread(read_buf, 4, 1, file);
-    if(strncmp(read_buf, "RIFF", 4)) {
+    if(fread(&wavhdr, sizeof(wavhdr), 1, file) != 1) {
         fclose(file);
         return 0;
     }
 
-    // Skip total filesize
-    fseek(file, 4, SEEK_CUR); // Skip
+    if(strncmp(wavhdr.hdr3, "data", 4)) {
+        /* File contains meta data that we want to skip.
+           Keep reading until we find the "data" header. */
+        fseek(file, wavhdr.datasize, SEEK_CUR);
 
-    // File Type Header "WAVE"
-    fread(read_buf, 4, 1, file);
-    if(strncmp(read_buf, "WAVE", 4)) {
-        fclose(file);
-        return 0;
+        do {
+            /* Read the next chunk header */
+            fread(&(wavhdr.hdr3), 4, 1, file);
+
+            /* Read the chunk size */
+            fread(&(wavhdr.datasize), 4, 1, file);
+
+            /* Skip the chunk if it's not the "data" chunk. */
+            if(strncmp(wavhdr.hdr3, "data", 4))
+                fseek(file, wavhdr.datasize, SEEK_CUR);
+        } while(strncmp(wavhdr.hdr3, "data", 4));
     }
 
-    // Format chunk marker "fmt " (including null terminator)
-    fread(read_buf, 4, 1, file);
-    if(strncmp(read_buf, "fmt ", 4)) {
-        fclose(file);
-        return 0;
-    }
+    result->format = wavhdr.format;
+    result->channels = wavhdr.channels;
+    result->sample_rate = wavhdr.sample_rate;
+    result->sameple_size = wavhdr.sample_size;
+    result->data_length = wavhdr.datasize;
 
-    // Length of format section
-    fread(&fmt_size, 4, 1, file); // Used to seek to 'data' chunk
-
-    // Get wav format
-    fread(&(result->wav_format), 2, 1, file);
-
-    // Get num of channels
-    fread(&(result->channels), 2, 1, file);
-
-    // Get Sample Rate
-    fread(&(result->sample_rate), 4, 1, file);
-
-    fseek(file, 20+fmt_size, SEEK_SET); // Skip to 'data' chunk
-
-    fread(read_buf, 4, 1, file);
-    if(strncmp(read_buf, "data", 4)) {
-        fclose(file);
-        return 0;
-    }
-
-    fread(&(result->data_length), 4, 1, file);
     result->data_offset = ftell(file);
 
     return 1;
 }
 
-#define WAV_ADDR_TYPE 8
-#define WAV_ADDR_FORMAT_HDR 12
-#define WAV_ADDR_FORMAT_LENGTH 16
-#define WAV_ADDR_FORMAT 20
-#define WAV_ADDR_CHAN 22
-#define WAV_ADDR_RATE 24
-
 int wav_get_info_buffer(const unsigned char* buffer, WavFileInfo* result) {
-    char read_buf[8];
-    unsigned int fmt_size;
+    wavhdr_t wavhdr;
+    size_t offset = sizeof(wavhdr_t);
+
     memset(result, 0, sizeof(WavFileInfo));
 
-    memcpy(read_buf, buffer, 4);
-    if(strncmp(read_buf, "RIFF", 4)) {
+    if(memcpy(&wavhdr, buffer, sizeof(wavhdr_t) == NULL))
         return 0;
+
+    if(strncmp(wavhdr.hdr3, "data", 4)) {
+        /* File contains meta data that we want to skip.
+           Keep reading until we find the "data" header. */
+        offset += wavhdr.datasize;
+
+        do {
+            /* Read the next chunk header */
+            memcpy(&(wavhdr.hdr3), buffer + offset, 4);
+            offset += 4;
+
+            /* Read the chunk size */
+            memcpy(&(wavhdr.datasize), buffer + offset, 4);
+            offset += 4;
+
+            /* Skip the chunk if it's not the "data" chunk. */
+            if(strncmp(wavhdr.hdr3, "data", 4))
+                offset += wavhdr.datasize;
+        } while(strncmp(wavhdr.hdr3, "data", 4));
     }
 
-    // File Type Header "WAVE"
-    memcpy(read_buf, buffer + WAV_ADDR_TYPE, 4);
-    if(strncmp(read_buf, "WAVE", 4)) {
-        return 0;
-    }
+    result->format = wavhdr.format;
+    result->channels = wavhdr.channels;
+    result->sample_rate = wavhdr.sample_rate;
+    result->sameple_size = wavhdr.sample_size;
+    result->data_length = wavhdr.datasize;
 
-    // Format chunk marker "fmt " (including null terminator)
-    memcpy(read_buf, buffer + WAV_ADDR_FORMAT_HDR, 4);
-    if(strncmp(read_buf, "fmt ", 4)) {
-        return 0;
-    }
-
-    // Length of format section
-    memcpy(&fmt_size, buffer + WAV_ADDR_FORMAT_LENGTH, 4); // Used to seek to 'data' chunk
-
-    // Get wav format
-    memcpy(&(result->wav_format), buffer + WAV_ADDR_FORMAT, 2);
-
-    // Get num of channels
-    memcpy(&(result->channels), buffer + WAV_ADDR_CHAN, 2);
-
-    // Get Sample Rate
-    memcpy(&(result->sample_rate), buffer + WAV_ADDR_RATE, 4);
-
-    memcpy(read_buf, buffer + WAV_ADDR_FORMAT + fmt_size, 4);
-    if(strncmp(read_buf, "data", 4)) {
-        return 0;
-    }
-
-    memcpy(&(result->data_length), buffer + WAV_ADDR_FORMAT + fmt_size + 4, 4);
-    result->data_offset = WAV_ADDR_FORMAT + fmt_size + 8;
+    result->data_offset = buffer + offset;
 
     return 1;
 }

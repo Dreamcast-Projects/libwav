@@ -1,31 +1,31 @@
 #ifndef LIBWAV_H
 #define LIBWAV_H
 
-// http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
-// http://soundfile.sapp.org/doc/WaveFormat/
-// https://wiki.fileformat.com/audio/wav/
-
 #include <sys/cdefs.h>
 __BEGIN_DECLS
 
 #include <stdio.h>
+#include <inttypes.h>
 
-#define	WAVE_FORMAT_PCM     	0x0001  // PCM
-#define	WAVE_FORMAT_IEEE_FLOAT  0x0003	// IEEE float
-#define	WAVE_FORMAT_ALAW	    0x0006  // 8-bit ITU-T G.711 A-law
-#define	WAVE_FORMAT_MULAW	    0x0007  // 8-bit ITU-T G.711 µ-law
-#define	WAVE_FORMAT_EXTENSIBLE	0xFFFE  // Determined by SubFormat
+#define	WAVE_FORMAT_PCM     	          0x0001 /* PCM */
+#define	WAVE_FORMAT_IEEE_FLOAT            0x0003 /* IEEE float */
+#define	WAVE_FORMAT_ALAW	              0x0006 /* 8-bit ITU-T G.711 A-law */
+#define	WAVE_FORMAT_MULAW	              0x0007 /* 8-bit ITU-T G.711 µ-law */
+#define WAVE_FORMAT_YAMAHA_ADPCM          0x0020 /* Yamaha ADPCM (ffmpeg) */
+#define WAVE_FORMAT_YAMAHA_ADPCM_ITU_G723 0x0014 /* ITU G.723 Yamaha ADPCM (KallistiOS) */
+#define	WAVE_FORMAT_EXTENSIBLE	          0xfffe /* Determined by SubFormat */
 
 typedef struct {
-    unsigned short wav_format;
-    unsigned short channels;
-    unsigned int sample_rate;
-    unsigned int data_offset;
-    unsigned int data_length;
+    uint32_t format;
+    uint32_t channels;
+    uint32_t sample_rate;
+    uint32_t sameple_size;
+    uint32_t data_offset;
+    uint32_t data_length;
 } WavFileInfo;
 
-int wav_get_info_file(FILE* file, WavFileInfo* result);
-int wav_get_info_buffer(const unsigned char* buffer, WavFileInfo* result);
+int wav_get_info_file(FILE *file, WavFileInfo *result);
+int wav_get_info_buffer(const uint8_t *buffer, WavFileInfo *result);
 
 __END_DECLS
 
