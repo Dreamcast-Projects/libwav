@@ -4,7 +4,7 @@
 #include <sys/cdefs.h>
 __BEGIN_DECLS
 
-#include <stdio.h>
+#include <kos/fs.h>
 #include <inttypes.h>
 
 #define	WAVE_FORMAT_PCM     	          0x0001 /* PCM */
@@ -24,7 +24,7 @@ typedef struct {
     uint32_t data_length;
 } WavFileInfo;
 
-int wav_get_info_file(FILE *file, WavFileInfo *result);
+int wav_get_info_file(file_t file, WavFileInfo *result);
 int wav_get_info_buffer(const uint8_t *buffer, WavFileInfo *result);
 
 __END_DECLS
