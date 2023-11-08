@@ -19,7 +19,7 @@ typedef struct {
     uint32_t format;
     uint32_t channels;
     uint32_t sample_rate;
-    uint32_t sameple_size;
+    uint32_t sample_size;
     uint32_t data_offset;
     uint32_t data_length;
 } WavFileInfo;

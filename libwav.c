@@ -3,10 +3,10 @@
 #include <string.h>
 
 typedef struct __attribute__((__packed__)) {
-    int8_t hdr1[4];
+    uint8_t hdr1[4];
     int32_t totalsize;
 
-    int8_t hdr2[8];
+    uint8_t hdr2[8];
     int32_t hdrsize;
     int16_t format;
     int16_t channels;
@@ -15,7 +15,7 @@ typedef struct __attribute__((__packed__)) {
     int16_t blocksize;
     int16_t sample_size;
 
-    int8_t hdr3[4];
+    uint8_t hdr3[4];
     int32_t datasize;
 } wavhdr_t;
 
