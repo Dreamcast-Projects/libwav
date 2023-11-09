@@ -5,8 +5,9 @@
 typedef struct __attribute__((__packed__)) {
     uint8_t hdr1[4];
     int32_t totalsize;
+    uint8_t riff_format[4];
 
-    uint8_t hdr2[8];
+    uint8_t hdr2[4];
     int32_t hdrsize;
     int16_t format;
     int16_t channels;
@@ -26,6 +27,16 @@ int wav_get_info_file(file_t file, WavFileInfo *result) {
 
     fs_seek(file, 0, SEEK_SET);
     if(fs_read(file, &wavhdr, sizeof(wavhdr)) != sizeof(wavhdr)) {
+        fs_close(file);
+        return 0;
+    }
+
+    if(strncmp((const char*)wavhdr.hdr1, "RIFF", 4)) {
+        fs_close(file);
+        return 0;
+    }
+
+    if(strncmp((const char*)wavhdr.riff_format, "WAVE", 4)) {
         fs_close(file);
         return 0;
     }
@@ -65,6 +76,12 @@ int wav_get_info_buffer(const uint8_t *buffer, WavFileInfo *result) {
 
     memset(result, 0, sizeof(WavFileInfo));
     memcpy(&wavhdr, buffer, sizeof(wavhdr_t));
+
+    if(strncmp((const char*)wavhdr.hdr1, "RIFF", 4))
+        return 0;
+
+    if(strncmp((const char*)wavhdr.riff_format, "WAVE", 4))
+        return 0;
 
     if(strncmp((const char *)wavhdr.hdr3, "data", 4)) {
         /* File contains meta data that we want to skip.
