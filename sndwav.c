@@ -69,7 +69,7 @@ typedef struct {
 static snddrv_hnd streams[SND_STREAM_MAX];
 static volatile int sndwav_status = SNDDRV_STATUS_NULL;
 
-static void *sndwav_thread(void);
+static void *sndwav_thread(void *param);
 static void *wav_file_callback(snd_stream_hnd_t hnd, int req, int *done);
 static void *wav_buf_callback(snd_stream_hnd_t hnd, int req, int *done);
 
@@ -324,7 +324,8 @@ void wav_remove_filter(wav_stream_hnd_t hnd, wav_filter filter, void *obj) {
     snd_stream_filter_remove(streams[hnd].shnd, filter, obj);
 }
 
-static void *sndwav_thread(void) {
+static void *sndwav_thread(void *param) {
+    (void)param;
     int i;
 
     while(sndwav_status != SNDDRV_STATUS_DONE) {
