@@ -70,7 +70,7 @@ int wav_get_info_file(file_t file, WavFileInfo *result) {
     return 1;
 }
 
-int wav_get_info_cdda_fd(file_t file, WavFileInfo *result) {
+int wav_get_info_cdda(file_t file, WavFileInfo *result) {
     result->format = WAVE_FORMAT_PCM;
     result->channels = 2;
     result->sample_rate = 44100;
