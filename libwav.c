@@ -11,8 +11,8 @@ typedef struct __attribute__((__packed__)) {
 } wavmagic_t;
 
 typedef struct __attribute__((__packed__)) {
-    uint8_t chunk_id[4];
-    int32_t chunk_size;
+    uint8_t id[4];
+    size_t size;
 } chunkhdr_t;
 
 typedef struct __attribute__((__packed__)) {
@@ -56,22 +56,22 @@ int wav_get_info_file(file_t file, WavFileInfo *result) {
 
         /* If it is the fmt chunk, grab the fields we care about and skip the 
            rest of the section if there is more */
-        if(strncmp((const char *)chunkhdr.chunk_id, "fmt ", 4) == 0) {
+        if(strncmp((const char *)chunkhdr.id, "fmt ", 4) == 0) {
             if(fs_read(file, &(fmthdr), sizeof(fmthdr)) != sizeof(fmthdr)) {
                 fs_close(file);
                 return 0;
             }
 
             /* Skip the rest of the fmt chunk */ 
-            fs_seek(file, chunkhdr.chunk_size - sizeof(fmthdr), SEEK_CUR);
+            fs_seek(file, chunkhdr.size - sizeof(fmthdr), SEEK_CUR);
         }
         /* If we found the data chunk, we are done */
-        else if(strncmp((const char *)chunkhdr.chunk_id, "data", 4) == 0) {
+        else if(strncmp((const char *)chunkhdr.id, "data", 4) == 0) {
             break;
         }
         /* Skip meta data */
         else { 
-            fs_seek(file, chunkhdr.chunk_size, SEEK_CUR);
+            fs_seek(file, chunkhdr.size, SEEK_CUR);
         }
     } while(1);
 
@@ -79,7 +79,7 @@ int wav_get_info_file(file_t file, WavFileInfo *result) {
     result->channels = fmthdr.channels;
     result->sample_rate = fmthdr.sample_rate;
     result->sample_size = fmthdr.sample_size;
-    result->data_length = chunkhdr.chunk_size;
+    result->data_length = chunkhdr.size;
 
     result->data_offset = fs_tell(file);
 
@@ -120,19 +120,19 @@ int wav_get_info_buffer(const uint8_t *buffer, WavFileInfo *result) {
 
         /* If it is the fmt chunk, grab the fields we care about and skip the 
            rest of the section if there is more */
-        if(strncmp((const char *)chunkhdr.chunk_id, "fmt ", 4) == 0) {
+        if(strncmp((const char *)chunkhdr.id, "fmt ", 4) == 0) {
             memcpy(&(fmthdr), buffer + data_offset, sizeof(fmthdr));
 
             /* Skip the rest of the fmt chunk */
-            data_offset += chunkhdr.chunk_size;
+            data_offset += chunkhdr.size;
         }
         /* If we found the data chunk, we are done */
-        else if(strncmp((const char *)chunkhdr.chunk_id, "data", 4) == 0) {
+        else if(strncmp((const char *)chunkhdr.id, "data", 4) == 0) {
             break;
         }
         /* Skip meta data */
         else { 
-            data_offset += chunkhdr.chunk_size;
+            data_offset += chunkhdr.size;
         }
     } while(1);
 
@@ -140,7 +140,7 @@ int wav_get_info_buffer(const uint8_t *buffer, WavFileInfo *result) {
     result->channels = fmthdr.channels;
     result->sample_rate = fmthdr.sample_rate;
     result->sample_size = fmthdr.sample_size;
-    result->data_length = chunkhdr.chunk_size;
+    result->data_length = chunkhdr.size;
 
     result->data_offset = data_offset;
 

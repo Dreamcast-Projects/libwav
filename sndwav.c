@@ -238,7 +238,7 @@ wav_stream_hnd_t wav_create_buf(const uint8_t *buf, int loop) {
     if(buf == NULL)
         return SND_STREAM_INVALID;
 
-    index = snd_stream_alloc(wav_file_callback, SND_STREAM_BUFFER_MAX); // SND_STREAM_BUFFER_MAX/4
+    index = snd_stream_alloc(wav_file_callback, SND_STREAM_BUFFER_MAX);
 
     if(index == SND_STREAM_INVALID) {
         snd_stream_destroy(index);
