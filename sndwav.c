@@ -113,6 +113,12 @@ void wav_destroy(wav_stream_hnd_t hnd) {
     if(streams[hnd].shnd == SND_STREAM_INVALID)
         return;
 
+    streams[hnd].status = SNDDEC_STATUS_NULL;
+    snd_stream_destroy(streams[hnd].shnd);
+    streams[hnd].shnd = SND_STREAM_INVALID;
+    streams[hnd].vol = 240;
+    streams[hnd].callback = NULL;
+
     if(streams[hnd].wave_file != FILEHND_INVALID)
         fs_close(streams[hnd].wave_file);
 
@@ -120,14 +126,6 @@ void wav_destroy(wav_stream_hnd_t hnd) {
         free(streams[hnd].drv_buf);
         streams[hnd].drv_buf = NULL;
     }
-
-    snd_stream_stop(streams[hnd].shnd);
-    snd_stream_destroy(streams[hnd].shnd);
-    
-    streams[hnd].shnd = SND_STREAM_INVALID;
-    streams[hnd].vol = 240;
-    streams[hnd].status = SNDDEC_STATUS_NULL;
-    streams[hnd].callback = NULL;
 }
 
 wav_stream_hnd_t wav_create(const char *filename, int loop) {
@@ -317,7 +315,7 @@ void wav_volume(wav_stream_hnd_t hnd, int vol) {
     snd_stream_volume(streams[hnd].shnd, streams[hnd].vol);
 }
 
-int wav_isplaying(wav_stream_hnd_t hnd) {
+int wav_is_playing(wav_stream_hnd_t hnd) {
     return streams[hnd].status == SNDDEC_STATUS_STREAMING;
 }
 
