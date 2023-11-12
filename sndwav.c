@@ -114,8 +114,6 @@ void wav_destroy(wav_stream_hnd_t hnd) {
         return;
 
     streams[hnd].status = SNDDEC_STATUS_NULL;
-    snd_stream_destroy(streams[hnd].shnd);
-    streams[hnd].shnd = SND_STREAM_INVALID;
     streams[hnd].vol = 240;
     streams[hnd].callback = NULL;
 
@@ -126,6 +124,9 @@ void wav_destroy(wav_stream_hnd_t hnd) {
         free(streams[hnd].drv_buf);
         streams[hnd].drv_buf = NULL;
     }
+
+    snd_stream_destroy(streams[hnd].shnd);
+    streams[hnd].shnd = SND_STREAM_INVALID;
 }
 
 wav_stream_hnd_t wav_create(const char *filename, int loop) {
