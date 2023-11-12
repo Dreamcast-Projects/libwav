@@ -68,6 +68,7 @@ typedef struct {
 
 static snddrv_hnd streams[SND_STREAM_MAX];
 static volatile int sndwav_status = SNDDRV_STATUS_NULL;
+static kthread_t *audio_thread;
 
 static void *sndwav_thread(void *param);
 static void *wav_file_callback(snd_stream_hnd_t hnd, int req, int *done);
@@ -86,7 +87,8 @@ int wav_init(void) {
         streams[i].callback = NULL;
     }
 
-    if(thd_create(1, sndwav_thread, NULL) != NULL) {
+    audio_thread = thd_create(0, sndwav_thread, NULL);
+    if(snd_thread != NULL) {
         sndwav_status = SNDDRV_STATUS_READY;
         return 1;
 	}
@@ -99,6 +101,9 @@ void wav_shutdown(void) {
     int i;
 
     sndwav_status = SNDDRV_STATUS_DONE;
+
+    thd_join(audio_thread, NULL);
+
     for(i = 0; i < SND_STREAM_MAX; i++) {
         wav_destroy(i);
     }
