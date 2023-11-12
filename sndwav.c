@@ -88,7 +88,7 @@ int wav_init(void) {
     }
 
     audio_thread = thd_create(0, sndwav_thread, NULL);
-    if(snd_thread != NULL) {
+    if(audio_thread != NULL) {
         sndwav_status = SNDDRV_STATUS_READY;
         return 1;
 	}
