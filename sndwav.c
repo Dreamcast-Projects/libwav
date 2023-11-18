@@ -114,11 +114,10 @@ void wav_destroy(wav_stream_hnd_t hnd) {
     if(streams[hnd].shnd == SND_STREAM_INVALID)
         return;
 
-    mutex_lock(&stream_mutex);
+    streams[hnd].status = SNDDEC_STATUS_NULL;
 
     snd_stream_destroy(streams[hnd].shnd);
     streams[hnd].shnd = SND_STREAM_INVALID;
-    streams[hnd].status = SNDDEC_STATUS_NULL;
     streams[hnd].vol = 240;
     streams[hnd].callback = NULL;
 
@@ -129,8 +128,6 @@ void wav_destroy(wav_stream_hnd_t hnd) {
         free(streams[hnd].drv_buf);
         streams[hnd].drv_buf = NULL;
     }
-
-    mutex_unlock(&stream_mutex);
 }
 
 wav_stream_hnd_t wav_create(const char *filename, int loop) {
@@ -335,18 +332,11 @@ void wav_remove_filter(wav_stream_hnd_t hnd, wav_filter filter, void *obj) {
 static void *sndwav_thread(void *param) {
     (void)param;
     int i;
-    int activeStreams;
 
     while(sndwav_status != SNDDRV_STATUS_DONE) {
 
-        mutex_lock(&stream_mutex);
-
-        activeStreams = 0;
-
         for(i = 0; i < SND_STREAM_MAX; i++) {
             switch(streams[i].status) {
-                case SNDDEC_STATUS_READY:
-                    break;
                 case SNDDEC_STATUS_RESUMING:
                     if(streams[i].sample_size == 16) {
                         snd_stream_start(streams[i].shnd, streams[i].sample_rate, streams[i].channels - 1);
@@ -372,18 +362,14 @@ static void *sndwav_thread(void *param) {
                     break;
                 case SNDDEC_STATUS_STREAMING:
                     snd_stream_poll(streams[i].shnd);
-                    //activeStreams++;
-                    //thd_sleep(20);
+                    break;
+                case SNDDEC_STATUS_READY:
+                default:
                     break;
             }
         }
 
-        /* No active streams, put thread to sleep */
-        //if (activeStreams == 0) {
-            thd_sleep(20);
-        //}
-
-        mutex_unlock(&stream_mutex);
+        thd_sleep(20);
     }
 
     return NULL;
