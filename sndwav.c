@@ -372,16 +372,16 @@ static void *sndwav_thread(void *param) {
                     break;
                 case SNDDEC_STATUS_STREAMING:
                     snd_stream_poll(streams[i].shnd);
-                    activeStreams++;
-                    thd_sleep(20);
+                    //activeStreams++;
+                    //thd_sleep(20);
                     break;
             }
         }
 
         /* No active streams, put thread to sleep */
-        if (activeStreams == 0) {
+        //if (activeStreams == 0) {
             thd_sleep(20);
-        }
+        //}
 
         mutex_unlock(&stream_mutex);
     }
