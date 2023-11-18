@@ -69,6 +69,7 @@ typedef struct {
 static snddrv_hnd streams[SND_STREAM_MAX];
 static volatile int sndwav_status = SNDDRV_STATUS_NULL;
 static kthread_t *audio_thread;
+static mutex_t stream_mutex = MUTEX_INITIALIZER;
 
 static void *sndwav_thread(void *param);
 static void *wav_file_callback(snd_stream_hnd_t hnd, int req, int *done);
