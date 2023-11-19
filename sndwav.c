@@ -374,9 +374,9 @@ static void *sndwav_thread(void *param) {
             }
         }
 
-        thd_sleep(20);
-
         mutex_unlock(&stream_mutex);
+
+        thd_sleep(50);
     }
 
     return NULL;
