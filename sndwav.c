@@ -157,17 +157,17 @@ wav_stream_hnd_t wav_create(const char *filename, int loop) {
 
     fn_len = strlen(filename);
 
-    // Check for ".raw" or ".pcm" extension
+    /* Check for ".raw" or ".pcm" extension */
     if (fn_len >= 4 && 
         (strcmp(&filename[fn_len - 4], ".raw") == 0) ||
         (strcmp(&filename[fn_len - 4], ".pcm") == 0)) {
         wav_get_info_cdda(file, &info);
     }
-    // Check for ".adpcm" extension
+    /* Check for ".adpcm" extension */
     else if (fn_len >= 6 && strcmp(&filename[fn_len - 6], ".adpcm") == 0) {
         wav_get_info_adpcm(file, &info);
     }
-    // Default case: handle other file types
+    /* Default case: handle other file types */
     else if(!wav_get_info_file(file, &info)) {
         fs_close(file);
         snd_stream_destroy(index);
