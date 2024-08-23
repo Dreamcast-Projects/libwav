@@ -26,6 +26,7 @@ typedef struct {
 
 int wav_get_info_file(file_t file, WavFileInfo *result);
 int wav_get_info_cdda(file_t file, WavFileInfo *result);
+int wav_get_info_adpcm(file_t file, WavFileInfo *result);
 int wav_get_info_buffer(const uint8_t *buffer, WavFileInfo *result);
 
 __END_DECLS
