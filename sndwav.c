@@ -164,7 +164,7 @@ wav_stream_hnd_t wav_create(const char *filename, int loop) {
         wav_get_info_cdda(file, &info);
     }
     /* Check for ".adpcm" extension */
-    else if (fn_len >= 6 && strcmp(&filename[fn_len - 6], ".adpcm") == 0) {
+    else if((fn_len >= 6) && (strcmp(&filename[fn_len - 6], ".adpcm") == 0)) {
         wav_get_info_adpcm(file, &info);
     }
     /* Default case: handle other file types */
