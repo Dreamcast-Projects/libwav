@@ -4,6 +4,7 @@
 #include <string.h>
 #include <malloc.h>
 
+#include <kos/mutex.h>
 #include <kos/thread.h>
 #include <dc/sound/stream.h>
 
