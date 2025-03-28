@@ -359,6 +359,7 @@ static void *sndwav_thread(void *param) {
                     } else if(streams[i].sample_size == 4) {
                         snd_stream_start_adpcm(streams[i].shnd, streams[i].sample_rate, streams[i].channels - 1);
                     }
+                    snd_stream_volume(streams[i].shnd, streams[i].vol);
                     streams[i].status = SNDDEC_STATUS_STREAMING;
                     break;
                 case SNDDEC_STATUS_PAUSING:
