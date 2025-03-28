@@ -296,6 +296,7 @@ void wav_play(wav_stream_hnd_t hnd) {
     if(streams[hnd].status == SNDDEC_STATUS_STREAMING)
        return;
 
+    snd_stream_volume(streams[hnd].shnd, streams[hnd].vol);
     streams[hnd].status = SNDDEC_STATUS_RESUMING;
 }
 
